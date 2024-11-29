@@ -1,7 +1,12 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import { Vesting } from "../target/types/vesting";
-import { BanksClient, ProgramTestContext, startAnchor } from "solana-bankrun";
+import {
+  BanksClient,
+  Clock,
+  ProgramTestContext,
+  startAnchor,
+} from "solana-bankrun";
 import {
   program,
   SYSTEM_PROGRAM_ID,
@@ -124,5 +129,28 @@ describe("vesting", () => {
 
     console.log("Create employee account TX: ", tx2);
     console.log("Employee Account: ", employeeAccount.toBase58());
+  });
+
+  it("should claim employee's vested token", async () => {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    const currentclock = await banksClient.getClock();
+    context.setClock(
+      new Clock(
+        currentclock.slot,
+        currentclock.epochStartTimestamp,
+        currentclock.epoch,
+        currentclock.leaderScheduleEpoch,
+        1000n
+      )
+    );
+
+    const tx3 = await program2.methods
+      .claimTokens(companyName)
+      .accounts({
+        tokenProgram: TOKEN_PROGRAM_ID,
+      })
+      .rpc({ commitment: "confirmed" });
+
+    console.log("Claim Token TX: ", tx3);
   });
 });
